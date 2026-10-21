@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>VIA Mester - Mértékegység & Normálalak</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">
+          <h1>VIA Mester</h1>
+          <p class="subtitle desktop-only">Mértékegység átváltások • Normálalak • Kerekítés</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="mode-toggle">
+          <button id="mode-learn-btn" class="mode-btn active" title="Tanuló mód">📖 Tanuló</button>
+          <button id="mode-practice-btn" class="mode-btn" title="Gyakorló mód">🎯 Gyakorló</button>
+        </div>
+
+        <button id="open-table-btn" class="btn-nav btn-table" title="Prefixum táblázat">
+          <span class="icon">📊</span> <span class="btn-label desktop-only">Táblázat</span>
+        </button>
+
+        <button id="open-ai-btn" class="btn-nav btn-ai" title="Valódi AI Oktató">
+          <span class="icon">🤖</span> <span class="btn-label desktop-only">AI Oktató</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Desktop Toolbar (Visible on Desktop) -->
+    <section class="toolbar-card desktop-only">
+      <div class="toolbar-filters">
+        <div class="filter-col">
+          <label for="difficulty-select">Nehézségi szint:</label>
+          <select id="difficulty-select" class="form-select">
+            <option value="hard" selected>🔥 Nehéz (Hosszú számok, pl. 1111,123·10³)</option>
+            <option value="expert">💀 Két tagú összetett (pl. A + B = ?)</option>
+            <option value="normal">⚡ Közepes / Vegyes</option>
+          </select>
+        </div>
+
+        <div class="filter-col">
+          <label for="category-select">Témakör:</label>
+          <select id="category-select" class="form-select">
+            <option value="all">⚡ Összes vegyesen (F, Ω, V, A, W, s, Hz)</option>
+            <option value="elec_cap">🔋 Kapacitás (F, pF, nF, μF, mF)</option>
+            <option value="elec_res">🔌 Ellenállás (Ω, mΩ, kΩ, MΩ, GΩ)</option>
+            <option value="elec_volt_curr">⚡ Feszültség & Áram (V, A)</option>
+            <option value="time_freq">⏱️ Idő & Frekvencia (s, Hz)</option>
+          </select>
+        </div>
+
+        <div class="filter-col">
+          <label for="rounding-select">Kerekítési szabály:</label>
+          <select id="rounding-select" class="form-select" disabled>
+            <option value="dec4" selected>🎯 Mindig 4 tizedesjegyre (Előírás)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat-badge">
+          <span class="stat-lbl">Helyes:</span>
+          <span id="stat-correct" class="stat-val correct">0</span>
+        </div>
+        <div class="stat-badge">
+          <span class="stat-lbl">Összes:</span>
+          <span id="stat-total" class="stat-val">0</span>
+        </div>
+        <div class="stat-badge">
+          <span class="stat-lbl">Széria:</span>
+          <span id="stat-streak" class="stat-val streak">🔥 0</span>
+        </div>
+        <button id="reset-stats-btn" class="btn-text-small">Nullázás</button>
+      </div>
+    </section>
+
+    <!-- Mobile Compact Bar (Visible on Mobile Only) -->
+    <section class="mobile-compact-bar mobile-only">
+      <div class="mobile-selects">
+        <select id="mobile-diff-select" class="mini-select">
+          <option value="hard" selected>🔥 Nehéz</option>
+          <option value="expert">💀 2-tagú</option>
+          <option value="normal">⚡ Közepes</option>
+        </select>
+        <select id="mobile-cat-select" class="mini-select">
+          <option value="all">⚡ Vegyes</option>
+          <option value="elec_cap">🔋 Kapacitás</option>
+          <option value="elec_res">🔌 Ellenállás</option>
+          <option value="elec_volt_curr">⚡ V / A</option>
+          <option value="time_freq">⏱️ Idő / Hz</option>
+        </select>
+      </div>
+      <div class="mobile-stats">
+        <span class="stat-mini"><strong id="mobile-stat-correct">0</strong>/<span id="mobile-stat-total">0</span></span>
+        <span class="stat-mini streak" id="mobile-stat-streak">🔥 0</span>
+      </div>
+    </section>
+
+    <!-- Main Workspace Area -->
+    <main class="main-workspace">
+      <!-- Task Equation Card -->
+      <div class="task-card">
+        <div class="task-header desktop-only">
+          <div class="task-title-wrap">
+            <span class="badge" id="task-type-badge">Nehéz átváltás</span>
+            <span class="task-instruction">Váltsd át a cél mértékegységbe, normálalakban megadva!</span>
+          </div>
+          <span class="task-rule-tag">Szabály: 1 ≤ |a| &lt; 10, mindig 4 tizedesre kerekítve</span>
+        </div>
+
+        <!-- Math Presentation -->
+        <div class="math-display-card">
+          <div class="eq-scroll-wrap">
+            <div class="equation-box" id="equation-box">
+              <div class="eq-left" id="eq-source-display">
+                <span class="num-highlight">1111,123</span><span class="op"> · </span>10<sup class="exp">3</sup> <span class="unit">pF</span>
+              </div>
+              <div class="eq-equal">=</div>
+              <div class="eq-right">
+                <span class="target-placeholder">?</span>
+                <span class="unit" id="eq-target-unit">μF</span>
+              </div>
+            </div>
+          </div>
+          <div class="mobile-rule-hint mobile-only">
+            Normálalak (1 ≤ |a| &lt; 10) • Mindig 4 tizedesjegyre kerekítve
+          </div>
+        </div>
+
+        <!-- Input Field Row -->
+        <div class="input-section">
+          <div class="input-label-row desktop-only">
+            <label for="answer-input" class="input-label">Végső számérték normálalakban:</label>
+            <span class="input-hint">Például: <code>1,1111 · 10⁶</code> vagy <code>1.1111x10^6</code></span>
+          </div>
+
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              id="answer-input" 
+              class="answer-input" 
+              placeholder="1,1111 · 10⁶" 
+              autocomplete="off" 
+              spellcheck="false"
+              autofocus
+            >
+            <span class="unit-tag" id="input-unit-tag">μF</span>
+          </div>
+        </div>
+
+        <!-- Virtual Calculator Keypad -->
+        <div class="keypad-container">
+          <div class="key-row">
+            <span class="row-label desktop-only">Művelet:</span>
+            <button type="button" class="key-btn key-accent" data-insert=" · 10^">· 10^</button>
+            <button type="button" class="key-btn key-accent" data-insert="·">·</button>
+            <button type="button" class="key-btn" data-insert="×">×</button>
+            <button type="button" class="key-btn" data-insert="^">^</button>
+            <button type="button" class="key-btn" data-insert=",">,</button>
+            <button type="button" class="key-btn" data-insert=".">.</button>
+            <button type="button" class="key-btn" data-insert="-">-</button>
+            <button type="button" id="key-backspace" class="key-btn key-action" title="Törlés balra">⌫</button>
+            <button type="button" id="key-clear" class="key-btn key-action" title="Ürítés">C</button>
+          </div>
+
+          <div class="key-row">
+            <span class="row-label desktop-only">Kitevő:</span>
+            <button type="button" class="key-btn key-exp" data-insert="⁻">⁻</button>
+            <button type="button" class="key-btn key-exp" data-insert="⁰">⁰</button>
+            <button type="button" class="key-btn key-exp" data-insert="¹">¹</button>
+            <button type="button" class="key-btn key-exp" data-insert="²">²</button>
+            <button type="button" class="key-btn key-exp" data-insert="³">³</button>
+            <button type="button" class="key-btn key-exp" data-insert="⁴">⁴</button>
+            <button type="button" class="key-btn key-exp" data-insert="⁵">⁵</button>
+            <button type="button" class="key-btn key-exp" data-insert="⁶">⁶</button>
+            <button type="button" class="key-btn key-exp" data-insert="⁷">⁷</button>
+            <button type="button" class="key-btn key-exp" data-insert="⁸">⁸</button>
+            <button type="button" class="key-btn key-exp" data-insert="⁹">⁹</button>
+          </div>
+
+          <div class="key-row">
+            <span class="row-label desktop-only">Prefixum:</span>
+            <button type="button" class="key-btn key-sym" data-insert="μ">μ</button>
+            <button type="button" class="key-btn key-sym" data-insert="Ω">Ω</button>
+            <button type="button" class="key-btn key-sym" data-insert="p">p</button>
+            <button type="button" class="key-btn key-sym" data-insert="n">n</button>
+            <button type="button" class="key-btn key-sym" data-insert="m">m</button>
+            <button type="button" class="key-btn key-sym" data-insert="k">k</button>
+            <button type="button" class="key-btn key-sym" data-insert="M">M</button>
+            <button type="button" class="key-btn key-sym" data-insert="G">G</button>
+          </div>
+
+          <div class="key-row quick-row">
+            <span class="row-label desktop-only">Gyors:</span>
+            <button type="button" class="chip-btn" data-insert=" · 10³">·10³</button>
+            <button type="button" class="chip-btn" data-insert=" · 10⁶">·10⁶</button>
+            <button type="button" class="chip-btn" data-insert=" · 10⁻³">·10⁻³</button>
+            <button type="button" class="chip-btn" data-insert=" · 10⁻⁶">·10⁻⁶</button>
+            <button type="button" class="chip-btn" data-insert=" · 10⁻⁹">·10⁻⁹</button>
+            <button type="button" class="chip-btn" data-insert=" · 10⁻¹²">·10⁻¹²</button>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions-row">
+          <button id="check-btn" class="btn btn-primary btn-check">
+            <span class="btn-icon">✓</span> Ellenőrzés (Enter)
+          </button>
+          <button id="next-btn" class="btn btn-secondary btn-next">
+            <span class="btn-icon">➔</span> Új feladat
+          </button>
+        </div>
+
+        <!-- Desktop Inline Evaluation / Feedback Panel -->
+        <div id="feedback-panel" class="feedback-card" style="display: none;">
+          <div class="feedback-top">
+            <div class="feedback-title-wrap">
+              <span class="feedback-icon" id="feedback-icon">✓</span>
+              <h3 class="feedback-title" id="feedback-title">Helyes válasz!</h3>
+            </div>
+            <button id="close-eval-btn" class="btn-close-eval">✕</button>
+          </div>
+          <div class="feedback-msg" id="feedback-message"></div>
+          
+          <div id="step-by-step-box" class="step-walkthrough" style="display: none;">
+            <h4>Lépésről lépésre levezetés:</h4>
+            <div id="steps-list" class="steps-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Bottom Tip Card -->
+      <section id="learn-mode-tips" class="tips-card desktop-only">
+        <span class="tips-icon">💡</span>
+        <div class="tips-content">
+          <strong>Tanuló mód:</strong> Nyisd meg a fenti <strong>"Táblázat"</strong> gombot a prefixumok megtekintéséhez, vagy kérdezd a <strong>valódi AI Oktatót</strong> bármilyen lépésről!
+        </div>
+      </section>
+    </main>
+
+    <!-- Desktop Footer -->
+    <footer class="app-footer desktop-only">
+      <span>VIA Mérnöki & Természettudományos Gyakorló Modul</span>
+    </footer>
+
+    <!-- Modal: SI Prefix Táblázat -->
+    <div id="prefix-modal" class="modal-backdrop" style="display: none;">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span class="modal-icon">📊</span>
+            <h2>SI Prefixumok és Hatványok Táblázata</h2>
+          </div>
+          <button id="close-modal-btn" class="btn-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">
+            A prefixum az alapegység szorzóját adja meg 10 hatványaként. Átváltáskor a kitevők különbségével korrigálunk.
+          </p>
+          <div class="table-wrap">
+            <table class="si-table">
+              <thead>
+                <tr>
+                  <th>Prefixum</th>
+                  <th>Jel</th>
+                  <th>Hatvány</th>
+                  <th>Tizedes alak</th>
+                  <th>Példa</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>Tera</strong></td><td><span class="pill">T</span></td><td><code>10¹²</code></td><td>1 000 000 000 000</td><td>1 THz = 10¹² Hz</td></tr>
+                <tr><td><strong>Giga</strong></td><td><span class="pill">G</span></td><td><code>10⁹</code></td><td>1 000 000 000</td><td>1 GHz = 10⁹ Hz</td></tr>
+                <tr><td><strong>Mega</strong></td><td><span class="pill">M</span></td><td><code>10⁶</code></td><td>1 000 000</td><td>1 MΩ = 10⁶ Ω</td></tr>
+                <tr><td><strong>kilo</strong></td><td><span class="pill">k</span></td><td><code>10³</code></td><td>1 000</td><td>1 kV = 10³ V</td></tr>
+                <tr class="base-row"><td><em>alapegység</em></td><td>—</td><td><code>10⁰</code></td><td>1</td><td>V, A, Ω, F, s, W, Hz</td></tr>
+                <tr><td><strong>milli</strong></td><td><span class="pill">m</span></td><td><code>10⁻³</code></td><td>0,001</td><td>1 mA = 10⁻³ A</td></tr>
+                <tr><td><strong>mikro</strong></td><td><span class="pill">μ</span></td><td><code>10⁻⁶</code></td><td>0,000 001</td><td>1 μF = 10⁻⁶ F</td></tr>
+                <tr><td><strong>nano</strong></td><td><span class="pill">n</span></td><td><code>10⁻⁹</code></td><td>0,000 000 001</td><td>1 nH = 10⁻⁹ H</td></tr>
+                <tr><td><strong>piko</strong></td><td><span class="pill">p</span></td><td><code>10⁻¹²</code></td><td>0,000 000 000 001</td><td>1 pF = 10⁻¹² F</td></tr>
+                <tr><td><strong>femto</strong></td><td><span class="pill">f</span></td><td><code>10⁻¹⁵</code></td><td>0,000 000 000 000 001</td><td>1 fs = 10⁻¹⁵ s</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="rule-box">
+            <h4>💡 Átváltási aranyszabály:</h4>
+            <p><strong>Új kitevő = Régi kitevő + (Kezdő prefix kitevő - Cél prefix kitevő)</strong><br>Nagyobb egységbe váltva a számérték csökken, kisebbe váltva nő.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="modal-ok-btn" class="btn btn-primary">Értem, vissza a feladathoz</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Valódi AI Oktató Chat -->
+    <div id="ai-modal" class="modal-backdrop" style="display: none;">
+      <div class="modal-dialog ai-dialog">
+        <div class="modal-header ai-modal-header">
+          <div class="modal-title-group">
+            <span class="modal-icon">🤖</span>
+            <div>
+              <h2>VIA AI Mentor</h2>
+              <span class="ai-live-indicator"><span class="pulse-dot"></span> Valódi felhőalapú AI (GPT)</span>
+            </div>
+          </div>
+          <div class="ai-header-btns">
+            <button id="ai-settings-btn" class="btn-circle-settings" title="Gemini API kulcs">⚙️</button>
+            <button id="close-ai-btn" class="btn-close">✕</button>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="ai-chat-messages">
+          <!-- Chat messages dynamically rendered -->
+        </div>
+
+        <!-- Quick Prompt Chips -->
+        <div class="prompt-chips-bar">
+          <button type="button" class="prompt-chip" data-prompt="Hogyan kezdjek hozzá ehhez a feladathoz?">💡 Kezdés</button>
+          <button type="button" class="prompt-chip" data-prompt="Magyarázd el a 4 tizedesjegyre kerekítést ehhez a feladathoz!">📐 4 tizedesjegy</button>
+          <button type="button" class="prompt-chip" data-prompt="Hogyan számolom a kitevőket ennél a feladatnál?">🔍 Kitevők</button>
+          <button type="button" class="prompt-chip" data-prompt="Nézd meg a beírt válaszomat!">✏️ Ellenőrzés</button>
+          <button type="button" class="prompt-chip" data-prompt="Vezesd le a teljes megoldást!">📝 Levezetés</button>
+        </div>
+
+        <!-- Chat Input Form -->
+        <div class="chat-input-row">
+          <input 
+            type="text" 
+            id="ai-user-input" 
+            class="chat-text-input" 
+            placeholder="Kérdezz bármit a feladatról az AI-tól..." 
+            autocomplete="off"
+          >
+          <button id="ai-send-btn" class="btn-ai-send">Küldés ➔</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Settings (API Key) -->
+    <div id="api-key-modal" class="modal-backdrop" style="display: none;">
+      <div class="modal-dialog modal-small">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span class="modal-icon">⚙️</span>
+            <h2>AI Beállítások</h2>
+          </div>
+          <button id="close-api-modal-btn" class="btn-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">
+            A program automatikusan a <strong>valódi AI modellt</strong> használja (felhőalapú intelligencia kulcs nélkül is).
+          </p>
+          <p class="modal-desc">
+            Ha saját <strong>Google Gemini API kulcsot</strong> szeretnél beállítani, itt megadhatod:
+          </p>
+          <input type="password" id="gemini-api-key-input" class="form-text-input" placeholder="AIzaSy... (opcionális)">
+        </div>
+        <div class="modal-footer">
+          <button id="save-api-key-btn" class="btn btn-primary">Mentés</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
